@@ -13,6 +13,28 @@ using blitz::firstDim;
 using namespace std;
 
 
+class DummyClass {
+public:
+    Array<int, 1> blitz_array_;
+    vector<Array<int, 1> > blitz_slices_;
+
+    DummyClass(int N) : blitz_array_(10 * N), blitz_slices_(10) {
+        for(int i = 0; i < blitz_array_.extent(firstDim); i++) {
+            blitz_array_(i) = i;
+        }
+
+        for(int i = 0; i < 10; i++) {
+            blitz_slices_[i].reference(blitz_array_(Range(i * N, (i + 1) * N - 1)));
+        }
+    }
+
+    ~DummyClass() {
+        cout << "[DummyClass] destructor" << endl;
+    }
+};
+
+
+
 int main(int argc, char** argv) {
     typedef boost::format _f;
     typedef boost::unordered_map<string, double> duration_map_t;
@@ -25,32 +47,43 @@ int main(int argc, char** argv) {
     }
     const int N = atoi(argv[1]);
 
-    Array<int, 1> blitz_array(10 * N);
-    clock_gettime(CLOCK_REALTIME, &start);
-    for(int i = 0; i < blitz_array.extent(firstDim); i++) {
-        blitz_array(i) = i;
-    }
-    clock_gettime(CLOCK_REALTIME, &end);
-    delta = time_diff(start, end);
-    duration_map["blitz array"] = delta.tv_sec + delta.tv_nsec * 1e-9;
-
-
-    vector<Array<int, 1> > blitz_slices(N);
+    /* Create pointer to new DummyClass instance so we can destruct it
+     * manually.
+     */
+    DummyClass *test = new DummyClass(N);
+    cout << test->blitz_array_ << endl;
 
     for(int i = 0; i < 10; i++) {
-        blitz_slices[i].reference(blitz_array(Range(i * N, (i + 1) * N - 1)));
-        cout << blitz_slices[i] << endl;
+        cout << test->blitz_slices_[i] << endl;
     }
 
+    /* Test copy constructor */
+    DummyClass bar(*test);
+    /* Test copy constructor via assignment */
+    DummyClass foo = *test;
+
+    /* Force destruction of test here. */
+    delete test;
+
+    cout << foo.blitz_array_ << endl;
+    for(int i = 0; i < foo.blitz_slices_.size(); i++) {
+        cout << foo.blitz_slices_[i] << endl;
+    }
+
+    cout << bar.blitz_array_ << endl;
+    for(int i = 0; i < bar.blitz_slices_.size(); i++) {
+        cout << bar.blitz_slices_[i] << endl;
+    }
+
+#if 0
     blitz_slices.clear();
     blitz_slices.reserve(10);
 
     for(int i = 0; i < 10; i++) {
-        blitz_slices.push_back(blitz_array(Range(i * N, (i + 1) * N - 1)));
+        blitz_slices.push_back(test.blitz_array_(Range(i * N, (i + 1) * N - 1)));
         cout << blitz_slices[i] << endl;
     }
 
-#if 0
     BOOST_FOREACH(duration_map_t::value_type &item, duration_map) {
         cout << _f("%s,%.2g") % item.first % item.second << endl;
     }
