@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iostream>
 #include <vector>
 #include <blitz/array.h>
 
@@ -7,7 +8,8 @@ namespace blitz {
 
 
 template <class T>
-struct ArraySlices {
+class ArraySlices {
+public:
     Array<T, 1> blitz_array_;
     std::vector<Array<T, 1> > blitz_slices_;
 
@@ -77,6 +79,73 @@ struct ArraySlices {
         blitz_array_ = temp_array;
 
         slice_by_sizes(slice_sizes);
+    }
+};
+
+
+template <bool reverse=false>
+struct sort_tiny_vector {
+    int operator()(TinyVector<int, 2> const &i, TinyVector<int, 2> const &j) {
+        if(reverse) {
+            return !compare(i, j);
+        }
+        return compare(i, j);
+    }
+
+    int compare(TinyVector<int, 2> const &i, TinyVector<int, 2> const &j) {
+        if(i(0) == j(0)) {
+            return i(1) < j(1);
+        }
+        return i(0) < j(0);
+    }
+};
+
+
+template <class T>
+class SortableArraySlices : public ArraySlices<T> {
+public:
+    vector<int> slice_order_;
+    vector<int> pre_sort_slice_order_;
+
+    void set_default_slice_order() {
+        slice_order_.resize(this->blitz_slices_.size());
+        for(int i = 0; i < slice_order_.size(); i++) {
+            slice_order_[i] = i;
+        }
+    }
+
+    SortableArraySlices(Array<T, 1> blitz_array) : ArraySlices<T>(blitz_array) {
+        set_default_slice_order();
+    }
+
+    SortableArraySlices(Array<T, 1> blitz_array, int step)
+            : ArraySlices<T>(blitz_array, step) {
+        set_default_slice_order();
+    }
+
+    SortableArraySlices(Array<T, 1> blitz_array,
+            Array<int, 1> const &slice_sizes) : ArraySlices<T>(blitz_array,
+                    slice_sizes) {
+        set_default_slice_order();
+    }
+
+    void sort(bool ascending=true) {
+        vector<TinyVector<int, 2> > sort_pairs(this->blitz_slices_.size());
+
+        for(int i = 0; i < this->blitz_slices_.size(); i++) {
+            sort_pairs[i](0) = this->blitz_slices_[i].size();
+            sort_pairs[i](1) = i;
+        }
+        if(ascending) {
+            std::sort(sort_pairs.begin(), sort_pairs.end(), sort_tiny_vector<false>());
+        } else {
+            std::sort(sort_pairs.begin(), sort_pairs.end(), sort_tiny_vector<true>());
+        }
+        for(int i = 0; i < this->blitz_slices_.size(); i++) {
+            slice_order_[i] = sort_pairs[i](1);
+            
+        }
+        this->reorder(slice_order_);
     }
 };
 

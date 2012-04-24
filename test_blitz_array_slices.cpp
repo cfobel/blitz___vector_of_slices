@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
         test_array(i) = i;
     }
 
-    ArraySlices<int> test(test_array, step_size);
+    ArraySlices<int> test(test_array.copy(), step_size);
     cout << "Entire Array:" << endl;
     cout << test.blitz_array_ << endl;
 
@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
         slice_sizes(slice_sizes.size() - 1) += N - slice_total;
     }
 
-    ArraySlices<int> test2(test_array, slice_sizes);
+    ArraySlices<int> test2(test_array.copy(), slice_sizes);
 
     cout << endl << endl;
     cout << "Sliced into steps of the following sizes:" << slice_sizes << ":" << endl << endl;
@@ -71,5 +71,24 @@ int main(int argc, char** argv) {
     test.reorder(slice_order);
     cout << "Reordered Array:" << endl;
     cout << test.blitz_array_ << endl;
+    for(int i = 0; i < test.blitz_slices_.size(); i++) {
+        cout << test.blitz_slices_[i] << endl;
+    }
+
+    SortableArraySlices<int> sortable_test(test_array.copy(), slice_sizes);
+    sortable_test.sort();
+    cout << "Sorted ascending array:" << endl;
+    cout << sortable_test.blitz_array_ << endl;
+    for(int i = 0; i < sortable_test.blitz_slices_.size(); i++) {
+        cout << sortable_test.blitz_slices_[i] << endl;
+    }
+
+    SortableArraySlices<int> descend_test(test_array.copy(), slice_sizes);
+    descend_test.sort(false);
+    cout << "Sorted descending array:" << endl;
+    cout << descend_test.blitz_array_ << endl;
+    for(int i = 0; i < descend_test.blitz_slices_.size(); i++) {
+        cout << descend_test.blitz_slices_[i] << endl;
+    }
     return 0;
 }
