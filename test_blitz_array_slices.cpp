@@ -1,4 +1,6 @@
 #include <iostream>
+#include <vector>
+#include <algorithm>
 #include <boost/unordered_map.hpp>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
@@ -57,19 +59,17 @@ int main(int argc, char** argv) {
         cout << test2.blitz_slices_[i] << endl;
     }
 
-#if 0
-    blitz_slices.clear();
-    blitz_slices.reserve(10);
-
-    for(int i = 0; i < 10; i++) {
-        blitz_slices.push_back(test.blitz_array_(Range(i * N, (i + 1) * N - 1)));
-        cout << blitz_slices[i] << endl;
+    vector<int> slice_order(test.blitz_slices_.size());
+    for(int i = 0; i < slice_order.size(); i++) {
+        slice_order[i] = i;
     }
+    random_shuffle(slice_order.begin(), slice_order.end());
+    cout << "Reorder array with the following order: ";
+    copy(slice_order.begin(), slice_order.end(), ostream_iterator<int>(cout,", "));
+    cout << endl;
 
-    BOOST_FOREACH(duration_map_t::value_type &item, duration_map) {
-        cout << _f("%s,%.2g") % item.first % item.second << endl;
-    }
-#endif
-    
+    test.reorder(slice_order);
+    cout << "Reordered Array:" << endl;
+    cout << test.blitz_array_ << endl;
     return 0;
 }

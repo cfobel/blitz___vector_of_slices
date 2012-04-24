@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <vector>
 #include <blitz/array.h>
 
@@ -10,20 +11,23 @@ struct ArraySlices {
     Array<T, 1> blitz_array_;
     std::vector<Array<T, 1> > blitz_slices_;
 
+    ArraySlices(Array<T, 1> blitz_array)
+            : blitz_array_(blitz_array) {
+        slice_by_step_size(blitz_array.size());
+    }
+
     ArraySlices(Array<T, 1> blitz_array, int step)
             : blitz_array_(blitz_array) {
-        assert(step <= blitz_array.size());
-        int slice_count = std::ceil((float)blitz_array.size() / step);
-        blitz_slices_.resize(slice_count);
-        for(int i = 0; i < slice_count; i++) {
-            int end = std::min((int)(i + 1) * step - 1, blitz_array.size() - 1);
-            blitz_slices_[i].reference(blitz_array_(Range(i * step, end)));
-        }
+        slice_by_step_size(step);
     }
 
     ArraySlices(Array<T, 1> blitz_array, Array<int, 1> const &slice_sizes)
             : blitz_array_(blitz_array) {
-        assert(blitz::sum(slice_sizes) == blitz_array.size());
+        slice_by_sizes(slice_sizes);
+    }
+
+    void slice_by_sizes(Array<int, 1> const &slice_sizes) {
+        assert(blitz::sum(slice_sizes) == blitz_array_.size());
         int running_count = 0;
         blitz_slices_.resize(slice_sizes.size());
         for(int i = 0; i < slice_sizes.size(); i++) {
@@ -31,6 +35,48 @@ struct ArraySlices {
                     running_count + slice_sizes(i) - 1)));
             running_count += slice_sizes(i);
         }
+    }
+
+    void slice_by_step_size(int step) {
+        assert(step <= blitz_array_.size());
+        int slice_count = std::ceil((float)blitz_array_.size() / step);
+        blitz_slices_.resize(slice_count);
+        for(int i = 0; i < slice_count; i++) {
+            int end = std::min((int)(i + 1) * step - 1, blitz_array_.size() - 1);
+            blitz_slices_[i].reference(blitz_array_(Range(i * step, end)));
+        }
+    }
+
+    void reorder(vector<int> const &new_positions) {
+        /* Verify that all indexes appear exactly once in new_positions.  This
+         * can be accomplished by copying new_positions to verify and sorting
+         * "verify".  After sorting, the minimum element must be 0 and the
+         * maximum value must be one less than the number of slices and the
+         * number of elements in new_positions must equal the number of slices.
+         */
+        assert(new_positions.size() == blitz_slices_.size());
+        vector<int> verify = new_positions;
+        std::sort(verify.begin(), verify.end());
+        assert(*std::min_element(verify.begin(), verify.end()) == 0);
+        assert(*std::max_element(verify.begin(), verify.end()) == (blitz_slices_.size() - 1));
+
+        /* Create temporary array, the same size as blitz_array_ */
+        Array<T, 1> temp_array(blitz_array_.size());
+
+        int running_count = 0;
+        Array<T, 1> slice_sizes(blitz_slices_.size());
+        for(int ordered_id = 0; ordered_id < new_positions.size();
+                ordered_id++) {
+            int slice_size = blitz_slices_[new_positions[ordered_id]].size();
+            Array<T, 1> new_slice(temp_array(blitz::Range(running_count,
+                    running_count + slice_size - 1)));
+            new_slice = blitz_slices_[new_positions[ordered_id]];
+            running_count += slice_size;
+            slice_sizes(ordered_id) = slice_size;
+        }
+        blitz_array_ = temp_array;
+
+        slice_by_sizes(slice_sizes);
     }
 };
 
