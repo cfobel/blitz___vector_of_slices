@@ -16,8 +16,7 @@ int main(int argc, char** argv) {
     duration_map_t duration_map;
 
     timespec start, end, delta;
-    if(argc != 3) {
-        cerr << _f("usage: %s <array size> <step size>") % argv[0] << endl;
+    if(argc != 3) { cerr << _f("usage: %s <array size> <step size>") % argv[0] << endl;
         exit(-1);
     }
     const int N = atoi(argv[1]);
@@ -39,17 +38,19 @@ int main(int argc, char** argv) {
         cout << test.blitz_slices_[i] << endl;
     }
 
-    Array<int, 1> slice_sizes((float)N / step_size);
+    Array<int, 1> slice_sizes((float)N / step_size + 1);
     slice_sizes = 0;
 
-    for(int i = 0; i < slice_sizes.size(); i++) {
+    for(int i = 0; i < slice_sizes.size() - 1; i++) {
         int slice_size = rand() % step_size + 1;
         slice_sizes(i) = slice_size;
     }
     int slice_total = blitz::sum(slice_sizes);
     if(slice_total < N) {
-        slice_sizes(slice_sizes.size() - 1) += N - slice_total;
+        slice_sizes(slice_sizes.size() - 2) += N - slice_total;
     }
+    /* Add an empty slice to show they can be handled. */
+    slice_sizes(slice_sizes.size() - 1) = 0;
 
     ArraySlices<int> test2(test_array.copy(), slice_sizes);
 
@@ -75,7 +76,8 @@ int main(int argc, char** argv) {
         cout << test.blitz_slices_[i] << endl;
     }
 
-    SortableArraySlices<int> sortable_test(test_array.copy(), slice_sizes);
+    SortableArraySlices<int> sortable_test;
+    sortable_test = SortableArraySlices<int>(test_array.copy(), slice_sizes);
     sortable_test.sort();
     cout << "Sorted ascending array:" << endl;
     cout << sortable_test.blitz_array_ << endl;

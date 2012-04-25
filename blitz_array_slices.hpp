@@ -14,6 +14,8 @@ public:
     std::vector<Array<T, 1> > blitz_slices_;
     Array<T, 1> slice_sizes_;
 
+    ArraySlices() {}
+
     ArraySlices(Array<T, 1> blitz_array)
             : blitz_array_(blitz_array) {
         slice_by_step_size(blitz_array.size());
@@ -27,6 +29,29 @@ public:
     ArraySlices(Array<T, 1> blitz_array, Array<int, 1> const &slice_sizes)
             : blitz_array_(blitz_array) {
         slice_by_sizes(slice_sizes);
+    }
+
+    ArraySlices(ArraySlices const &other)
+            : blitz_array_(other) {
+        Array<int, 1> slice_sizes(other.blitz_slices_.size());
+        for(int i = 0; i < slice_sizes.size(); i++) {
+            slice_sizes(i) = other.blitz_slices_[i].size();
+        }
+        slice_by_sizes(slice_sizes);
+    }
+
+    ArraySlices &operator=(ArraySlices const &other) {
+        // protect against invalid self-assignment
+        if(this != &other) {
+            this->blitz_array_.reference(other.blitz_array_);
+            Array<int, 1> slice_sizes(other.blitz_slices_.size());
+            for(int i = 0; i < slice_sizes.size(); i++) {
+                slice_sizes(i) = other.blitz_slices_[i].size();
+            }
+            this->slice_by_sizes(slice_sizes);
+        }
+        // by convention, always return *this
+        return *this;
     }
 
     void slice_by_sizes(Array<int, 1> const &slice_sizes) {
@@ -124,6 +149,8 @@ public:
         }
     }
 
+    SortableArraySlices() {}
+
     SortableArraySlices(Array<T, 1> blitz_array) : ArraySlices<T>(blitz_array) {
         set_default_slice_order();
     }
@@ -157,6 +184,30 @@ public:
         }
         this->reorder(slice_order_);
     }
+
+    SortableArraySlices(SortableArraySlices const &other)
+            : ArraySlices<T>(other), slice_order_(other.slice_order_),
+                    pre_sort_slice_order_(other.pre_sort_slice_order_) {}
+
+    SortableArraySlices &operator=(SortableArraySlices const &other) {
+        // protect against invalid self-assignment
+        if(this != &other) {
+            this->blitz_array_.reference(other.blitz_array_);
+            Array<int, 1> slice_sizes(other.blitz_slices_.size());
+            for(int i = 0; i < slice_sizes.size(); i++) {
+                slice_sizes(i) = other.blitz_slices_[i].size();
+            }
+            this->slice_by_sizes(slice_sizes);
+            this->slice_order_ = other.slice_order_;
+            this->pre_sort_slice_order_ = other.pre_sort_slice_order_;
+        }
+        // by convention, always return *this
+        return *this;
+    }
+
+
+
+
 };
 
 }
