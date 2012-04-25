@@ -143,6 +143,7 @@ class SortableArraySlices : public ArraySlices<T> {
 public:
     vector<int> ordered_to_unordered_;
     vector<int> unordered_to_ordered_;
+    Array<T, 1> unordered_slice_sizes_;
 
     void set_default_slice_order() {
         ordered_to_unordered_.resize(this->blitz_slices_.size());
@@ -182,11 +183,15 @@ public:
         } else {
             std::sort(sort_pairs.begin(), sort_pairs.end(), sort_tiny_vector<true>());
         }
+        unordered_slice_sizes_.resize(this->slice_sizes_.size());
         for(int i = 0; i < this->blitz_slices_.size(); i++) {
             ordered_to_unordered_[i] = sort_pairs[i](1);
             unordered_to_ordered_[ordered_to_unordered_[i]] = i;
         }
         this->reorder(ordered_to_unordered_);
+        for(int i = 0; i < this->blitz_slices_.size(); i++) {
+            unordered_slice_sizes_(ordered_to_unordered_[i]) = this->slice_sizes_(i);
+        }
     }
 
     SortableArraySlices(SortableArraySlices const &other)
