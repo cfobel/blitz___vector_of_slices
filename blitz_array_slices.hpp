@@ -141,13 +141,15 @@ struct sort_tiny_vector {
 template <class T>
 class SortableArraySlices : public ArraySlices<T> {
 public:
-    vector<int> slice_order_;
-    vector<int> pre_sort_slice_order_;
+    vector<int> ordered_to_unordered_;
+    vector<int> unordered_to_ordered_;
 
     void set_default_slice_order() {
-        slice_order_.resize(this->blitz_slices_.size());
-        for(int i = 0; i < slice_order_.size(); i++) {
-            slice_order_[i] = i;
+        ordered_to_unordered_.resize(this->blitz_slices_.size());
+        unordered_to_ordered_.resize(this->blitz_slices_.size());
+        for(int i = 0; i < ordered_to_unordered_.size(); i++) {
+            ordered_to_unordered_[i] = i;
+            unordered_to_ordered_[ordered_to_unordered_[i]] = i;
         }
     }
 
@@ -181,15 +183,15 @@ public:
             std::sort(sort_pairs.begin(), sort_pairs.end(), sort_tiny_vector<true>());
         }
         for(int i = 0; i < this->blitz_slices_.size(); i++) {
-            slice_order_[i] = sort_pairs[i](1);
-            
+            ordered_to_unordered_[i] = sort_pairs[i](1);
+            unordered_to_ordered_[ordered_to_unordered_[i]] = i;
         }
-        this->reorder(slice_order_);
+        this->reorder(ordered_to_unordered_);
     }
 
     SortableArraySlices(SortableArraySlices const &other)
-            : ArraySlices<T>(other), slice_order_(other.slice_order_),
-                    pre_sort_slice_order_(other.pre_sort_slice_order_) {}
+            : ArraySlices<T>(other), ordered_to_unordered_(other.ordered_to_unordered_),
+                    unordered_to_ordered_(other.unordered_to_ordered_) {}
 
     SortableArraySlices &operator=(SortableArraySlices const &other) {
         // protect against invalid self-assignment
@@ -200,8 +202,8 @@ public:
                 slice_sizes(i) = other.blitz_slices_[i].size();
             }
             this->slice_by_sizes(slice_sizes);
-            this->slice_order_ = other.slice_order_;
-            this->pre_sort_slice_order_ = other.pre_sort_slice_order_;
+            this->ordered_to_unordered_ = other.ordered_to_unordered_;
+            this->unordered_to_ordered_ = other.unordered_to_ordered_;
         }
         // by convention, always return *this
         return *this;
