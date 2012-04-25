@@ -12,6 +12,7 @@ class ArraySlices {
 public:
     Array<T, 1> blitz_array_;
     std::vector<Array<T, 1> > blitz_slices_;
+    Array<T, 1> slice_sizes_;
 
     ArraySlices(Array<T, 1> blitz_array)
             : blitz_array_(blitz_array) {
@@ -31,7 +32,12 @@ public:
     void slice_by_sizes(Array<int, 1> const &slice_sizes) {
         assert(blitz::sum(slice_sizes) == blitz_array_.size());
         int running_count = 0;
+
         blitz_slices_.resize(slice_sizes.size());
+        slice_sizes_.resize(slice_sizes.size());
+
+        /* Copy contents of slice_sizes into member slice_sizes_ */
+        slice_sizes_ = slice_sizes;
         for(int i = 0; i < slice_sizes.size(); i++) {
             blitz_slices_[i].reference(blitz_array_(Range(running_count,
                     running_count + slice_sizes(i) - 1)));
@@ -46,6 +52,10 @@ public:
         for(int i = 0; i < slice_count; i++) {
             int end = std::min((int)(i + 1) * step - 1, blitz_array_.size() - 1);
             blitz_slices_[i].reference(blitz_array_(Range(i * step, end)));
+        }
+        slice_sizes_.resize(blitz_slices_.size());
+        for(int i = 0; i < slice_sizes_.size(); i++) {
+            slice_sizes_(i) = blitz_slices_[i].size();
         }
     }
 
