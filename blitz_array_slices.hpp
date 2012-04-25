@@ -1,3 +1,5 @@
+#ifndef ___BLITZ__VECTOR_OF_SLICES__HPP___
+#define ___BLITZ__VECTOR_OF_SLICES__HPP___
 #include <algorithm>
 #include <iostream>
 #include <vector>
@@ -211,3 +213,4 @@ public:
 };
 
 }
+#endif
